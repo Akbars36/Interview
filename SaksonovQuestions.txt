@@ -1,0 +1,141 @@
+General:
+
+1. Multi-Tenancy
+Software Multitenancy refers to a software architecture in which a single instance of a software runs on a server and serves multiple tenants. 
+A tenant is a group of users who share a common access with specific privileges to the software instance. With a multitenant architecture, 
+a software application is designed to provide every tenant a dedicated share of the instance including its data, configuration, user management, 
+tenant individual functionality and non-functional properties. Multitenancy contrasts with multi-instance architectures, 
+where separate software instances operate on behalf of different tenants.
+Commentators regard multitenancy as an important feature of cloud computing
+ОДин сервис(код один) - много пользователей(может быть и под каждого бд)
+
+2. REST Semantics
+Все является ресурсами с уникальным идентификатором (URL)
+Все операции клиента с сервером stateless, т.е. сервер не должен хранить вообще никакой информации о клиенте – никакой сессии
+Все запросы можно поделить на 4 типа в соответствии с CRUD, причем каждому типу сопоставляется HTTP метод – Post, Get, Put и Delete
+Вся логика крутится вокруг ресурсов, а не операций
+
+3. Stateless Web
+Stateless - There's no memory (state) that's maintained by the program
+
+Stateful - The program has a memory (state)
+
+To illustrate the concept of state I'll define a function which is stateful and one which is stateless
+
+Stateless
+
+//The state is derived by what is passed into the function
+
+function int addOne(int number)
+{
+    return number + 1;
+}
+Stateful
+
+//The state is maintained by the function
+
+private int _number = 0; //initially zero 
+
+function int addOne()
+{
+    _number++;
+    return _number;
+}
+
+In computing, a stateless protocol is a communications protocol that treats each request as an independent transaction that is unrelated to any previous request so that the communication consists of independent pairs of request and response. A stateless protocol does not require the server to retain session information or status about each communications partner for the duration of multiple requests. In contrast, a protocol which requires keeping of the internal state on the server is known as a stateful protocol.
+
+Examples of stateless protocols include the Internet Protocol (IP) which is the foundation for the Internet, and the Hypertext Transfer Protocol (HTTP) which is the foundation of data communication for the World Wide Web.
+
+
+4. Sticky Sessions
+One solution to this problem is "sticky session" (aka "session affinity") where each user is assigned to a single server and his/her state data is contained on that server exclusively throughout the duration of the session.
+Pros:
+
+it's easy-- no app changes required.
+better utilizes local RAM caches (e.g. look up user profile once, cache it, and can re-use it on subsequent visits from same user)
+Cons:
+
+if the server goes down, session is lost. (note that this is a con of storing session info locally on the web server-- not of sticky sessions per se). if what's in the session is really important to the user (e.g. a draft email) or to the site (e.g. a shopping cart) then losing one of your servers can be very painful.
+depending on "sticky" implementation in your load balancer, may direct unequal load to some servers vs. others
+bringing a new server online doesn't immediately give the new server lots of load-- if you have a dynamic load-balancing system to deal with spikes, stickiness may slow your ability to respond quickly to a spike. That said, this is somewhat of a corner case and really only applies to very large and sophisticated sites.
+if you have relatively few users but a single user's traffic can swamp one server (e.g. complex pages with SSL, AJAX, dynamically-generated images, dynamic compression, etc.), then stickines may hurt end-user response time since you're not spreading a single user's load evenly across servers. If you have a lot of concurrent users, this is a non-issue since all your servers will be swamped!
+But if you must use server-local session state, sticky sessions are definitely the way to go-- and even if you don't use server-local session state, stickiness has benefits when it comes to cache utilization (see above). Your load balancer should be able to look at HTTP cookies (not only IP address) to determine stickiness, since IP addresses can change during a single session (e.g. docking a laptop between a wired and wireless network).
+
+Even better, don't use session state on the web server at all! If session state is very painful to lose (e.g. shopping carts), store it in a central database and clear out old sessions periodically. If session state is not critical (e.g. username/avatar URL), then stick it in a cookie-- just make sure you're not shoving too much data into the cookie.
+
+Modern versions of Rails, by default, store session variables in a cookie for the reasons above. Other web frameworks may have a "store in cookie" and/or "store in DB" option.
+
+
+5. MVC, DI, IoC
+Инверсия управления (англ. Inversion of Control, IoC) — это принцип объектно-ориентированного программирования, при котором объекты программы не зависят от конкретных реализаций других объектов, но могут иметь знание об их абстракциях (интерфейсах) для последующего взаимодействия.
+
+Внедрение зависимостей (англ. Dependency Injection) — это композиция структурных шаблонов проектирования, при которой за каждую функцию приложения отвечает один, условно независимый объект (сервис), который может иметь необходимость использовать другие объекты (зависимости), известные ему интерфейсами. Зависимости передаются (внедряются) сервису в момент его создания.
+http://habrahabr.ru/post/62830/
+https://en.wikipedia.org/wiki/Service_locator_pattern
+http://habrahabr.ru/post/131993/
+IOC реализация:
+1.DI
+2.Service_locator
+3.Factory
+https://gist.github.com/codedokode/e1d31a31b37d5f635057
+- Distributed vs. Replicated Cache
+https://docs.oracle.com/cd/E15357_01/coh.360/e15723/cache_intro.htm#COHDG319
+- RDBMS, SQL, Transactions, ACID
+Требования ACID
+Atomicity — Атомарность
+Атомарность гарантирует, что никакая транзакция не будет зафиксирована в системе частично. Будут либо выполнены все её подоперации, либо не выполнено ни одной. Поскольку на практике невозможно одновременно и атомарно выполнить всю последовательность операций внутри транзакции, вводится понятие «отката» (rollback): если транзакцию не удаётся полностью завершить, результаты всех её до сих пор произведённых действий будут отменены и система вернётся во «внешне исходное» состояние — со стороны будет казаться, что транзакции и не было. (Естественно, счётчики, индексы и другие внутренние структуры могут измениться, но, если СУБД запрограммирована без ошибок, это не повлияет на внешнее её поведение.)
+
+Consistency — Согласованность
+Основная статья: Согласованность данных
+Транзакция достигающая своего нормального завершения (EOT – end of transaction, завершение транзакции) и, тем самым, фиксирующая свои результаты, сохраняет согласованность базы данных. Другими словами, каждая успешная транзакция по определению фиксирует только допустимые результаты. Это условие является необходимым для поддержки четвертого свойства.
+
+Согласованность является более широким понятием. Например, в банковской системе может существовать требование равенства суммы, списываемой с одного счёта, сумме, зачисляемой на другой. Это бизнес-правило и оно не может быть гарантировано только проверками целостности, его должны соблюсти программисты при написании кода транзакций. Если какая-либо транзакция произведёт списание, но не произведёт зачисление, то система останется в некорректном состоянии и свойство согласованности будет нарушено.
+
+Наконец, ещё одно замечание касается того, что в ходе выполнения транзакции согласованность не требуется. В нашем примере, списание и зачисление будут, скорее всего, двумя разными подоперациями и между их выполнением внутри транзакции будет видно несогласованное состояние системы. Однако не нужно забывать, что при выполнении требования изоляции, никаким другим транзакциям эта несогласованность не будет видна. А атомарность гарантирует, что транзакция либо будет полностью завершена, либо ни одна из операций транзакции не будет выполнена. Тем самым эта промежуточная несогласованность является скрытой.
+
+Isolation — Изолированность[править | править вики-текст]
+Во время выполнения транзакции параллельные транзакции не должны оказывать влияние на её результат. Изолированность — требование дорогое, поэтому в реальных БД существуют режимы, не полностью изолирующие транзакцию (уровни изолированности Repeatable Read и ниже).
+
+Durability — Надежность[править | править вики-текст]
+Независимо от проблем на нижних уровнях (к примеру, обесточивание системы или сбои в оборудовании) изменения, сделанные успешно завершённой транзакцией, должны остаться сохранёнными после возвращения системы в работу. Другими словами, если пользователь получил подтверждение от системы, что транзакция выполнена, он может быть уверен, что сделанные им изменения не будут отменены из-за какого-либо сбоя.
+- NoSQL, CAP
+http://softwaremaniacs.org/blog/2010/01/31/brewers-cap-theorem/
+- ORM (Hibernate, JPA)
+ORM (англ. Object-relational mapping, рус. Объектно-реляционное отображение) — технология программирования, которая связывает базы данных с концепциями объектно-ориентированных языков программирования, создавая «виртуальную объектную базу данных».
+JPA – это технология, обеспечивающая объектно-реляционное отображение простых JAVA объектов и предоставляющая API для сохранения, получения и управления такими объектами.
+
+JPA – это спецификация (документ, утвержденный как стандарт, описывающий все аспекты технологии), часть EJB3 спецификации.
+
+Сам JPA не умеет ни сохранять, ни управлять объектами, JPA только определяет правила игры: как что-то будет действовать. JPA также определяет интерфейсы, которые должны будут быть реализованы провайдерами. Плюс к этому JPA определяет правила о том, как должны описываться метаданные отображения и о том, как должны работать провайдеры. Дальше, каждый провайдер, реализуя JPA определяет получение, сохранение и управление объектами. У каждого провайдера реализация разная.
+
+Реализации JPA:
+
+Hibernate
+Oracle TopLink
+Apache OpenJPA
+
+JPA состоит из трех основных пунктов:
+
+API – интерфейсы в пакете javax.persistance. Набор интерфейсов, которые позволяют организовать взаимодействие с ORM провайдером.
+JPQL – объектный язык запросов. Очень похож на SQL, но запросы выполняются к объектам.
+Metadata – аннотации над объектами. Набор аннотаций, которыми мы описываем метаданные отображения. Тогда уже JPA знает какой объект в какую таблицу нужно сохранить. Метаданные можно описывать двумя способами: XML-файлом или через аннотации.
+- Actors/Akka
+- Async I/O (Promises/Futures)
+- Ruby/Python – Duck Typing, Dynamic Typing
+- JavaScript: jQuery – What is Selector?
+- JavaScript: MVC (AngularJS, Backbone) – What is Binding?
+- CSS, LESS, NodeJS
+Java:
+- Java’s Object: State & Behavior
+- Interface, Inheritance
+- By-Reference/By-Value
+- TreeSet/Comparable/Comparator/NavigableSet/SortedSet
+- HashMap: hashCode() & equals()
+- ArrayList vs. LinkedList
+- ConcurrentHashMap
+- Atomics
+- Concurrency: synchronized/volatile, happens-before (JMM)
+- java.util.concurrent: Concurrent Collections (CopyOnWrite e.g.), Queues, Synchronizers (Semaphore, CountDownLatch, CyclicBarrier, Exchanger, Phaser), Executors (Future & Callable), Locks, Atomics
+- Fork Join
+- NIO (Channels/Selectors)
+- SoftReference, WeakReference
